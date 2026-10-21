@@ -20,6 +20,7 @@ export default function ScreenContainer({ children, scroll = true, style }: Prop
         style={styles.root}
         contentContainerStyle={[styles.content, padding, style]}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
         {children}
       </ScrollView>

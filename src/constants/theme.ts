@@ -6,7 +6,8 @@ export const colors = {
   text: '#ffffff',
   textSecondary: '#a0a0b0',
   alert: '#ff5252',
-  onPrimary: '#1a1a2e', // text on primary-coloured buttons
+  onPrimary: '#1a1a2e', 
+  rating: '#ffd93d',
 } as const;
 
 export const spacing = {
