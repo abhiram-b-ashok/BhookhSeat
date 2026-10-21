@@ -1,20 +1,15 @@
-
-import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Pressable, StyleSheet, Text } from 'react-native';
+import BackButton from '@/components/ui/BackButton';
 import EmptyState from '@/components/ui/EmptyState';
 import ErrorState from '@/components/ui/ErrorState';
 import LoadingState from '@/components/ui/LoadingState';
 import ScreenContainer from '@/components/ui/ScreenContainer';
-import { colors, spacing } from '@/constants/theme';
 import RestaurantDetails from '@/features/restaurants/components/RestaurantDetails';
 import { useRestaurant } from '@/features/restaurants/hooks/useRestaurants';
 
 export default function RestaurantScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { restaurant, loading, error, reload } = useRestaurant(id);
-
-  const goBack = () => (router.canGoBack() ? router.back() : router.replace('/'));
 
   let body;
   if (loading) {
@@ -30,27 +25,20 @@ export default function RestaurantScreen() {
       />
     );
   } else {
-    body = <RestaurantDetails restaurant={restaurant} />;
+    body = (
+      <RestaurantDetails
+        restaurant={restaurant}
+        onBookPress={() =>
+          router.push({ pathname: '/booking/create', params: { restaurantId: restaurant.id } })
+        }
+      />
+    );
   }
 
   return (
     <ScreenContainer>
-      <Pressable
-        onPress={goBack}
-        accessibilityRole="button"
-        accessibilityLabel="Go back"
-        style={styles.back}
-        hitSlop={8}
-      >
-        <Ionicons name="chevron-back" size={24} color={colors.primary} />
-        <Text style={styles.backText}>Back</Text>
-      </Pressable>
+      <BackButton />
       {body}
     </ScreenContainer>
   );
 }
-
-const styles = StyleSheet.create({
-  back: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.lg, alignSelf: 'flex-start' },
-  backText: { color: colors.primary, fontSize: 16 },
-});
