@@ -35,5 +35,7 @@ export function useBookings() {
     return result;
   }, []);
 
-  return { bookings, createBooking, cancelBooking };
+  const clearBookings = useCallback(() => bookingRepository.clear(), []);
+
+  return { bookings, createBooking, cancelBooking, clearBookings };
 }

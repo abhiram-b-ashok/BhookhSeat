@@ -95,7 +95,7 @@ export default function BookingsScreen() {
       )}
 
       {bookings.length > 0 ? (
-        <Text style={styles.note}>Bookings are kept in memory and reset when the app closes.</Text>
+        <Text style={styles.note}>Bookings are saved on this device only.</Text>
       ) : null}
     </ScreenContainer>
   );
