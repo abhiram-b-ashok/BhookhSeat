@@ -35,10 +35,18 @@ export default function SignUpForm({ onSubmit, onSwitchToSignIn }: Props) {
     try {
       await onSubmit(name, email.trim(), password);
     } catch (error) {
-      setFormError(mapAuthError(error));
-      inFlight.current = false;
-      setSubmitting(false);
-    }
+  console.error('[SignUp] Firebase error:', error);
+  console.error(
+    '[SignUp] Firebase error code:',
+    typeof error === 'object' && error !== null && 'code' in error
+      ? error.code
+      : 'No error code',
+  );
+
+  setFormError(mapAuthError(error));
+  inFlight.current = false;
+  setSubmitting(false);
+}
   };
 
   return (

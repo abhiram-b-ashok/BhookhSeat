@@ -28,13 +28,16 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>({ status: 'loading', user: null });
 
-  useEffect(
-    () =>
-      subscribeToAuth((user) =>
-        setState(user ? { status: 'signedIn', user } : { status: 'signedOut', user: null }),
-      ),
-    [],
-  );
+ useEffect(() => {
+
+  return subscribeToAuth((user) => {
+    setState(
+      user
+        ? { status: 'signedIn', user }
+        : { status: 'signedOut', user: null },
+    );
+  });
+}, []);
 
   const signIn = useCallback((email: string, password: string) => signInWithEmail(email, password), []);
 

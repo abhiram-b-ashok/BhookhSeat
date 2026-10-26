@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "563537098066",
+    "project_id": "bhookhseat",
+    "storage_bucket": "bhookhseat.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:563537098066:android:9a4ba2272d0bafc7f5f68b",
+        "android_client_info": {
+          "package_name": "com.abhiram.bhookhseat"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAHrwyY0XRk0C_WZC4oqMxMT0Mu9wgFBFE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
