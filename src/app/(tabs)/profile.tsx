@@ -6,6 +6,7 @@ import { colors, radii, spacing, typography } from '@/constants/theme';
 import AppButton from '@/components/ui/AppButton';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { mapAuthError } from '@/features/auth/domain/authErrors';
+import { bookingRepository } from '@/features/bookings/data/bookingRepository';
 import { partitionBookings } from '@/features/bookings/domain/bookingRules';
 import { useBookings } from '@/features/bookings/hooks/useBookings';
 
@@ -37,6 +38,7 @@ export default function ProfileScreen() {
 
   const handleSignOut = async () => {
     try {
+      bookingRepository.reset();
       await signOut();
     } catch (error) {
       Alert.alert('Could not sign out', mapAuthError(error));

@@ -1,4 +1,6 @@
 import {
+  BOOKINGS_STORAGE_KEY,
+  getBookingsStorageKey,
   isBooking,
   parseStoredBookings,
   serializeBookings,
@@ -77,5 +79,13 @@ describe('serialising and parsing bookings', () => {
     expect(isBooking(undefined)).toBe(false);
     expect(isBooking([makeBooking()])).toBe(false);
     expect(isBooking(makeBooking())).toBe(true);
+    expect(isBooking(makeBooking({ userId: 'usr_abc' }))).toBe(true);
+    expect(isBooking({ ...makeBooking(), userId: 123 })).toBe(false);
+  });
+
+  it('computes storage keys scoped by user', () => {
+    expect(getBookingsStorageKey()).toBe(BOOKINGS_STORAGE_KEY);
+    expect(getBookingsStorageKey(null)).toBe(BOOKINGS_STORAGE_KEY);
+    expect(getBookingsStorageKey('usr_123')).toBe('bhookhseat.bookings.usr_123');
   });
 });

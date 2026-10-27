@@ -231,6 +231,7 @@ type BuildArgs = {
   existingBookings: Booking[];
   now: Date;
   id: string;
+  userId?: string;
   demand?: DemandFn;
 };
 
@@ -241,6 +242,7 @@ export function buildBooking({
   existingBookings,
   now,
   id,
+  userId,
   demand,
 }: BuildArgs): Result<Booking> {
   const restaurant = restaurants.find((r) => r.id === input.restaurantId);
@@ -273,6 +275,7 @@ export function buildBooking({
 
   return ok({
     id,
+    userId,
     restaurantId: restaurant.id,
     restaurantName: restaurant.name,
     durationMinutes: restaurant.bookingRules.slotDurationMinutes,

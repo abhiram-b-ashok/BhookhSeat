@@ -8,6 +8,7 @@ export type BookingStatus = 'confirmed' | 'cancelled';
 
 export type Booking = {
   id: string;
+  userId?: string;
   restaurantId: string;
   /** Snapshots, so the booking still displays correctly if restaurant data changes. */
   restaurantName: string;

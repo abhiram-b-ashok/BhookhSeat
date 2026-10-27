@@ -255,4 +255,68 @@ describe('booking repository', () => {
     repo.add(makeBooking({ id: 'other' }));
     expect(repo.getAll()).not.toBe(first);
   });
+
+  describe('multi-user scoping', () => {
+    function mapStorage() {
+      const map = new Map<string, string>();
+      const storage: KeyValueStorage = {
+        async getItem(key) {
+          return map.get(key) ?? null;
+        },
+        async setItem(key, value) {
+          map.set(key, value);
+        },
+      };
+      return { storage, map };
+    }
+
+    it('isolates bookings per user and does not leak to another account', async () => {
+      const { storage, map } = mapStorage();
+      const repo = createBookingRepository(storage);
+
+      // User 1 logs in and creates a booking
+      await repo.hydrate('user_1');
+      repo.add(makeBooking({ id: 'bkg_u1', restaurantName: 'User 1 Cafe' }));
+      await repo.flush();
+
+      expect(repo.getAll().map((b) => b.id)).toEqual(['bkg_u1']);
+      expect(map.has('bhookhseat.bookings.user_1')).toBe(true);
+      expect(map.has('bhookhseat.bookings.user_2')).toBe(false);
+
+      // User 2 logs in: starts empty
+      await repo.hydrate('user_2');
+      expect(repo.getAll()).toEqual([]);
+
+      // User 2 creates their own booking
+      repo.add(makeBooking({ id: 'bkg_u2', restaurantName: 'User 2 Diner' }));
+      await repo.flush();
+      expect(repo.getAll().map((b) => b.id)).toEqual(['bkg_u2']);
+
+      // User 1 logs back in: sees only their booking
+      await repo.hydrate('user_1');
+      expect(repo.getAll().map((b) => b.id)).toEqual(['bkg_u1']);
+    });
+
+    it('resets in-memory bookings on sign out (hydrate with null or reset)', async () => {
+      const { storage } = mapStorage();
+      const repo = createBookingRepository(storage);
+
+      await repo.hydrate('user_1');
+      repo.add(makeBooking({ id: 'bkg_u1' }));
+      await repo.flush();
+      expect(repo.getAll()).toHaveLength(1);
+
+      // Sign out
+      await repo.hydrate(null);
+      expect(repo.getAll()).toEqual([]);
+
+      // Sign back in
+      await repo.hydrate('user_1');
+      expect(repo.getAll()).toHaveLength(1);
+
+      // Reset
+      repo.reset();
+      expect(repo.getAll()).toEqual([]);
+    });
+  });
 });

@@ -6,6 +6,12 @@ import type { Booking, BookingStatus } from '../domain/booking.types';
 export const BOOKINGS_STORAGE_KEY = 'bhookhseat.bookings';
 const STORAGE_VERSION = 1;
 
+/** Returns the storage key scoped to a specific user, or the shared fallback key when no user is provided. */
+export function getBookingsStorageKey(userId?: string | null): string {
+  if (!userId) return BOOKINGS_STORAGE_KEY;
+  return `${BOOKINGS_STORAGE_KEY}.${userId}`;
+}
+
 const STATUSES: readonly BookingStatus[] = ['confirmed', 'cancelled'];
 const TABLE_TYPES: readonly TableType[] = ['couple', 'standard', 'family', 'large_group'];
 
@@ -19,6 +25,7 @@ export function isBooking(value: unknown): value is Booking {
   return (
     typeof v.id === 'string' &&
     v.id.length > 0 &&
+    (v.userId === undefined || (typeof v.userId === 'string' && v.userId.length > 0)) &&
     typeof v.restaurantId === 'string' &&
     typeof v.restaurantName === 'string' &&
     typeof v.tableLabel === 'string' &&

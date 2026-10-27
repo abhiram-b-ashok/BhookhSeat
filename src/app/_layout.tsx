@@ -11,13 +11,13 @@ import { bookingRepository } from '@/features/bookings/data/bookingRepository';
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 function RootNavigator() {
-  const { status } = useAuth();
+  const { status, user } = useAuth();
   const [bookingsReady, setBookingsReady] = useState(false);
 
   useEffect(() => {
-    // hydrate() never rejects: on a storage problem the app simply starts empty.
-    bookingRepository.hydrate().finally(() => setBookingsReady(true));
-  }, []);
+    if (status === 'loading') return;
+    bookingRepository.hydrate(user?.uid ?? null).finally(() => setBookingsReady(true));
+  }, [status, user?.uid]);
 
   const ready = status !== 'loading' && bookingsReady;
 
