@@ -1,45 +1,28 @@
 import { useCallback, useSyncExternalStore } from 'react';
-import { useOptionalAuth } from '@/features/auth/hooks/useAuth';
 import type { Restaurant } from '@/features/restaurants/domain/restaurant.types';
 import { bookingRepository } from '../data/bookingRepository';
 import type { Booking, BookingInput, Result } from '../domain/booking.types';
-import { buildBooking, cancelBooking as applyCancellation } from '../domain/bookingRules';
-
-const createBookingId = () =>
-  `bkg_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
 
 export function useBookings() {
-  const auth = useOptionalAuth();
-  const userId = auth?.user?.uid;
   const bookings = useSyncExternalStore(bookingRepository.subscribe, bookingRepository.getAll);
+  const status = useSyncExternalStore(bookingRepository.subscribe, bookingRepository.getStatus);
 
   /**
-   * Validate and save in one synchronous step, so two quick taps can never both
-   * pass validation before the first booking is stored.
+   * Asynchronous: the booking is checked and saved on the server in one step, so the
+   * last table can only ever go to one person.
    */
   const createBooking = useCallback(
-    (restaurants: Restaurant[], input: BookingInput): Result<Booking> => {
-      const result = buildBooking({
-        restaurants,
-        input,
-        existingBookings: bookingRepository.getAll(),
-        now: new Date(),
-        id: createBookingId(),
-        userId,
-      });
-      if (result.ok) bookingRepository.add(result.value);
-      return result;
-    },
-    [userId],
+    (restaurants: Restaurant[], input: BookingInput): Promise<Result<Booking>> =>
+      bookingRepository.create(restaurants, input),
+    [],
   );
 
-  const cancelBooking = useCallback((bookingId: string): Result<Booking> => {
-    const result = applyCancellation(bookingRepository.getAll(), bookingId, new Date());
-    if (result.ok) bookingRepository.update(result.value);
-    return result;
-  }, []);
+  const cancelBooking = useCallback(
+    (bookingId: string): Promise<Result<Booking>> => bookingRepository.cancel(bookingId),
+    [],
+  );
 
-  const clearBookings = useCallback(() => bookingRepository.clear(), []);
+  const reload = useCallback(() => bookingRepository.reload(), []);
 
-  return { bookings, createBooking, cancelBooking, clearBookings };
+  return { bookings, status, createBooking, cancelBooking, reload };
 }

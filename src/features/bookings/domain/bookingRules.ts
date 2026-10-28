@@ -38,6 +38,9 @@ const MESSAGES: Record<BookingErrorCode, string> = {
   ALREADY_CANCELLED: 'This booking is already cancelled.',
   CANCELLATION_NOT_ALLOWED: 'This restaurant does not allow cancellations.',
   BOOKING_STARTED: 'This booking has already started or finished.',
+  NOT_SIGNED_IN: 'Please sign in to book a table.',
+  STILL_LOADING: 'Your bookings are still loading. Please try again in a moment.',
+  SERVICE_UNAVAILABLE: 'Could not reach the booking service. Check your connection and try again.',
 };
 
 const ok = <T>(value: T): Result<T> => ({ ok: true, value });
@@ -45,6 +48,9 @@ const fail = (code: BookingErrorCode): Result<never> => ({
   ok: false,
   error: { code, message: MESSAGES[code] },
 });
+
+/** A failed result for a rule code, for code outside this file that needs to report one. */
+export const bookingFailure = fail;
 
 /* ------------------------------------------------------------------ */
 /* Basic rules                                                         */

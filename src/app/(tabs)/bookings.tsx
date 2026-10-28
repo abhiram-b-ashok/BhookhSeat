@@ -3,6 +3,8 @@ import { useState } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 import AppHeader from '@/components/AppHeader';
 import EmptyState from '@/components/ui/EmptyState';
+import ErrorState from '@/components/ui/ErrorState';
+import LoadingState from '@/components/ui/LoadingState';
 import ScreenContainer from '@/components/ui/ScreenContainer';
 import { spacing, typography } from '@/constants/theme';
 import BookingCard from '@/features/bookings/components/BookingCard';
@@ -15,7 +17,7 @@ import { formatShortDate, formatTime12h } from '@/utils/formatDate';
 type Tab = 'upcoming' | 'past';
 
 export default function BookingsScreen() {
-  const { bookings, cancelBooking } = useBookings();
+  const { bookings, status, cancelBooking, reload } = useBookings();
   const [tab, setTab] = useState<Tab>('upcoming');
 
   const now = new Date();
@@ -31,8 +33,8 @@ export default function BookingsScreen() {
         {
           text: 'Cancel booking',
           style: 'destructive',
-          onPress: () => {
-            const result = cancelBooking(booking.id);
+          onPress: async () => {
+            const result = await cancelBooking(booking.id);
             if (!result.ok) Alert.alert('Could not cancel', result.error.message);
           },
         },
@@ -57,7 +59,15 @@ export default function BookingsScreen() {
         />
       </View>
 
-      {list.length === 0 ? (
+      {status === 'loading' ? (
+        <LoadingState message="Loading your bookings…" />
+      ) : status === 'error' ? (
+        <ErrorState
+          title="Could not load your bookings"
+          message="Check your connection and try again."
+          onRetry={reload}
+        />
+      ) : list.length === 0 ? (
         tab === 'upcoming' ? (
           <EmptyState
             icon="calendar-outline"
@@ -95,7 +105,7 @@ export default function BookingsScreen() {
       )}
 
       {bookings.length > 0 ? (
-        <Text style={styles.note}>Bookings are saved on this device only.</Text>
+        <Text style={styles.note}>Bookings are saved to your account.</Text>
       ) : null}
     </ScreenContainer>
   );

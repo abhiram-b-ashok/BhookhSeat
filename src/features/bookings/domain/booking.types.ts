@@ -47,7 +47,10 @@ export type BookingErrorCode =
   | 'BOOKING_NOT_FOUND'
   | 'ALREADY_CANCELLED'
   | 'CANCELLATION_NOT_ALLOWED'
-  | 'BOOKING_STARTED';
+  | 'BOOKING_STARTED'
+  | 'NOT_SIGNED_IN'
+  | 'STILL_LOADING'
+  | 'SERVICE_UNAVAILABLE';
 
 export type BookingError = { code: BookingErrorCode; message: string };
 
