@@ -50,7 +50,8 @@ export type BookingErrorCode =
   | 'BOOKING_STARTED'
   | 'NOT_SIGNED_IN'
   | 'STILL_LOADING'
-  | 'SERVICE_UNAVAILABLE';
+  | 'SERVICE_UNAVAILABLE'
+  | 'BOOKING_LIMIT_REACHED';
 
 export type BookingError = { code: BookingErrorCode; message: string };
 

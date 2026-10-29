@@ -1,4 +1,5 @@
 import type { Restaurant } from '../../restaurants/domain/restaurant.types';
+import type { PlanId } from '../../subscriptions/domain/plans';
 import type { Booking, BookingInput, Result } from './booking.types';
 import { buildBooking, cancelBooking } from './bookingRules';
 import { adjustCounts, buildSharedDemand, occupancyDocId, type OccupancyCounts } from './occupancy';
@@ -15,6 +16,7 @@ type CreateArgs = {
   counts: OccupancyCounts;
   now: Date;
   id: string;
+  plan?: PlanId;
   baseDemand?: DemandFn;
 };
 
@@ -23,7 +25,7 @@ type CreateArgs = {
  * Firestore transaction only has to read, call this, and write the result.
  */
 export function planCreate(args: CreateArgs): Result<Plan> {
-  const { userId, restaurants, input, ownBookings, counts, now, id, baseDemand } = args;
+  const { userId, restaurants, input, ownBookings, counts, now, id, plan, baseDemand } = args;
 
   const result = buildBooking({
     restaurants,
@@ -32,6 +34,7 @@ export function planCreate(args: CreateArgs): Result<Plan> {
     now,
     id,
     userId,
+    plan,
     demand: buildSharedDemand({
       counts,
       ownBookings,

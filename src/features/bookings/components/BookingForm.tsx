@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import { useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import SectionHeader from '@/components/SectionHeader';
@@ -80,6 +81,7 @@ export default function BookingForm({ restaurant, onBooked }: Props) {
   );
   const [time, setTime] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [errorCode, setErrorCode] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const inFlight = useRef(false);
 
@@ -110,34 +112,28 @@ export default function BookingForm({ restaurant, onBooked }: Props) {
     inFlight.current = true;
     setSubmitting(true);
     setError(null);
+    setErrorCode(null);
 
-    try {
-      // The server checks the rules and takes the table in one step, so this can still
-      // fail even if the slot looked free a moment ago (someone else may have just taken it).
-      const result = await createBooking([restaurant], {
-        restaurantId: restaurant.id,
-        date,
-        time: selectedSlot.time,
-        guestCount,
-      });
+    // The server checks the rules and takes the table in one step, so this can still
+    // fail even if the slot looked free a moment ago (someone else may have just taken it).
+    const result = await createBooking([restaurant], {
+      restaurantId: restaurant.id,
+      date,
+      time: selectedSlot.time,
+      guestCount,
+    });
 
-      if (result.ok) {
-        onBooked(result.value); // the screen is replaced, so there is nothing left to reset
-        return;
-      }
-
-      inFlight.current = false;
-      setSubmitting(false);
-      setError(result.error.message);
-      setTime(null);
-      setNow(new Date()); // refresh so slots that just became too soon are dimmed
-    } catch (err: unknown) {
-      inFlight.current = false;
-      setSubmitting(false);
-      setError(err instanceof Error ? err.message : 'Failed to confirm booking.');
-      setTime(null);
-      setNow(new Date());
+    if (result.ok) {
+      onBooked(result.value); // the screen is replaced, so there is nothing left to reset
+      return;
     }
+
+    inFlight.current = false;
+    setSubmitting(false);
+    setError(result.error.message);
+    setErrorCode(result.error.code);
+    setTime(null);
+    setNow(new Date()); // refresh so slots that just became too soon are dimmed
   };
 
   return (
@@ -174,6 +170,11 @@ export default function BookingForm({ restaurant, onBooked }: Props) {
         <Text style={styles.error} accessibilityRole="alert">
           {error}
         </Text>
+      ) : null}
+      {errorCode === 'BOOKING_LIMIT_REACHED' ? (
+        <View style={styles.upgrade}>
+          <AppButton title="See Premium" variant="secondary" onPress={() => router.push('/premium')} />
+        </View>
       ) : null}
 
       {selectedSlot ? (
@@ -222,6 +223,7 @@ const styles = StyleSheet.create({
   stepValue: { ...typography.body, fontWeight: '600' },
   hint: { ...typography.caption, fontSize: 12, marginTop: spacing.sm },
   error: { color: colors.alert, fontSize: 14, marginTop: spacing.lg },
+  upgrade: { marginTop: spacing.md },
   summary: {
     backgroundColor: colors.surface,
     borderRadius: radii.lg,

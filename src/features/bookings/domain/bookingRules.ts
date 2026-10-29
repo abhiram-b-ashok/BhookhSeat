@@ -10,6 +10,7 @@ import {
 } from '../../../utils/dateTime';
 import type { Restaurant, TableType } from '../../restaurants/domain/restaurant.types';
 import { getWeekday } from '../../restaurants/domain/restaurantHours';
+import { PLANS, type PlanId } from '../../subscriptions/domain/plans';
 import type {
   Booking,
   BookingErrorCode,
@@ -41,6 +42,8 @@ const MESSAGES: Record<BookingErrorCode, string> = {
   NOT_SIGNED_IN: 'Please sign in to book a table.',
   STILL_LOADING: 'Your bookings are still loading. Please try again in a moment.',
   SERVICE_UNAVAILABLE: 'Could not reach the booking service. Check your connection and try again.',
+  BOOKING_LIMIT_REACHED:
+    'You have reached the limit of active bookings for your plan. Cancel one or upgrade to book more.',
 };
 
 const ok = <T>(value: T): Result<T> => ({ ok: true, value });
@@ -238,6 +241,8 @@ type BuildArgs = {
   now: Date;
   id: string;
   userId?: string;
+  /** Defaults to Free, so a caller that forgets to pass it can never grant extra bookings. */
+  plan?: PlanId;
   demand?: DemandFn;
 };
 
@@ -249,6 +254,7 @@ export function buildBooking({
   now,
   id,
   userId,
+  plan = 'free',
   demand,
 }: BuildArgs): Result<Booking> {
   const restaurant = restaurants.find((r) => r.id === input.restaurantId);
@@ -263,6 +269,10 @@ export function buildBooking({
 
   if (!isValidTime(input.time) || !SLOT_START_TIMES.includes(input.time)) return fail('INVALID_TIME');
   if (!isWithinOpeningHours(restaurant, input.date, input.time)) return fail('OUTSIDE_OPENING_HOURS');
+
+  // The plan's limit lives here, with every other booking rule, not in any screen.
+  const activeBookings = existingBookings.filter((b) => getDisplayStatus(b, now) === 'confirmed').length;
+  if (activeBookings >= PLANS[plan].maxActiveBookings) return fail('BOOKING_LIMIT_REACHED');
 
   const { status, tableType } = evaluateSlot({
     restaurant,

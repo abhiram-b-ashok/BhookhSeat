@@ -42,7 +42,7 @@ export const firestoreBookingBackend: BookingBackend = {
     );
   },
 
-  async createBooking({ userId, restaurants, input, ownBookings, now, id }): Promise<Result<Booking>> {
+  async createBooking({ userId, restaurants, input, ownBookings, now, id, plan }): Promise<Result<Booking>> {
     // Checked first so a bad id can never become part of a document path.
     if (!restaurants.some((r) => r.id === input.restaurantId)) return bookingFailure('RESTAURANT_NOT_FOUND');
     if (!isValidISODate(input.date)) return bookingFailure('INVALID_DATE');
@@ -57,16 +57,16 @@ export const firestoreBookingBackend: BookingBackend = {
       const occupancySnap = await transaction.get(occupancyRef);
       const counts = occupancySnap.exists() ? parseOccupancyCounts(occupancySnap.data()?.counts) : {};
 
-      const plan = planCreate({ userId, restaurants, input, ownBookings, counts, now, id });
-      if (!plan.ok) return plan;
+      const planned = planCreate({ userId, restaurants, input, ownBookings, counts, now, id, plan });
+      if (!planned.ok) return planned;
 
-      transaction.set(bookingRef, toBookingDocument(plan.value.booking, userId));
+      transaction.set(bookingRef, toBookingDocument(planned.value.booking, userId));
       transaction.set(occupancyRef, {
-        [OCCUPANCY_DOCUMENT_KEYS[0]]: plan.value.booking.restaurantId,
-        [OCCUPANCY_DOCUMENT_KEYS[1]]: plan.value.booking.date,
-        [OCCUPANCY_DOCUMENT_KEYS[2]]: plan.value.nextCounts,
+        [OCCUPANCY_DOCUMENT_KEYS[0]]: planned.value.booking.restaurantId,
+        [OCCUPANCY_DOCUMENT_KEYS[1]]: planned.value.booking.date,
+        [OCCUPANCY_DOCUMENT_KEYS[2]]: planned.value.nextCounts,
       });
-      return { ok: true, value: plan.value.booking };
+      return { ok: true, value: planned.value.booking };
     });
   },
 

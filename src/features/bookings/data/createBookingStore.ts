@@ -2,6 +2,7 @@ import type { Restaurant } from '../../restaurants/domain/restaurant.types';
 import type { Booking, BookingInput, Result } from '../domain/booking.types';
 import { bookingFailure } from '../domain/bookingRules';
 import type { OccupancyCounts } from '../domain/occupancy';
+import type { PlanId, PlanState } from '../../subscriptions/domain/plans';
 import type { BookingBackend } from './bookingBackend';
 
 export type StoreStatus = 'idle' | 'loading' | 'ready' | 'error';
@@ -56,6 +57,8 @@ export function createBookingStore(backend: BookingBackend, options: Options = {
   let unsubscribe: (() => void) | null = null;
   let attached: { userId: string; promise: Promise<void> } | null = null;
   let opQueue: Promise<unknown> = Promise.resolve();
+  /** Plan per account. Never shared between accounts, so one person's Premium cannot leak to another. */
+  const plans = new Map<string, PlanState>();
   const listeners = new Set<() => void>();
 
   const emit = () => listeners.forEach((listener) => listener());
@@ -120,6 +123,7 @@ export function createBookingStore(backend: BookingBackend, options: Options = {
     bookings = [];
 
     if (!next) {
+      plans.clear();
       status = 'idle';
       emit();
       return Promise.resolve();
@@ -186,6 +190,11 @@ export function createBookingStore(backend: BookingBackend, options: Options = {
     /** Pass the signed-in user's id to start listening, or null on sign-out. Safe to repeat. */
     hydrate,
 
+    /** Tell the store which plan an account is on. Ignored until that account is the active one. */
+    setPlan(forUserId: string, state: PlanState): void {
+      plans.set(forUserId, state);
+    },
+
     /** Try again after an error. */
     reload(): Promise<void> {
       return userId ? hydrate(userId) : Promise.resolve();
@@ -198,16 +207,25 @@ export function createBookingStore(backend: BookingBackend, options: Options = {
       const gen = generation;
       return enqueue(() => {
         if (gen !== generation) return Promise.resolve(bookingFailure('NOT_SIGNED_IN'));
-        return runOperation((uid) =>
-          backend.createBooking({
+        const planState: PlanState = (userId && plans.get(userId)) || 'unknown';
+        const plan: PlanId = planState === 'premium' ? 'premium' : 'free';
+        return runOperation(async (uid) => {
+          const result = await backend.createBooking({
             userId: uid,
             restaurants,
             input,
             ownBookings: bookings,
             now: getNow(),
             id: generateId(),
-          }),
-        );
+            plan,
+          });
+          // Hitting the Free limit while we are still waiting to hear if they are Premium
+          // would be a wrong answer, so say "still loading" instead.
+          if (!result.ok && result.error.code === 'BOOKING_LIMIT_REACHED' && planState === 'unknown') {
+            return bookingFailure('STILL_LOADING');
+          }
+          return result;
+        });
       });
     },
 

@@ -1,6 +1,7 @@
 import type { Restaurant } from '../../restaurants/domain/restaurant.types';
 import type { Booking, BookingInput, Result } from '../domain/booking.types';
 import type { OccupancyCounts } from '../domain/occupancy';
+import type { PlanId } from '../../subscriptions/domain/plans';
 
 type Handlers<T> = { onData: (data: T) => void; onError: (error: unknown) => void };
 
@@ -27,6 +28,7 @@ export type BookingBackend = {
     ownBookings: Booking[];
     now: Date;
     id: string;
+    plan: PlanId;
   }): Promise<Result<Booking>>;
 
   /** Must cancel the booking and release its table in one atomic step. */

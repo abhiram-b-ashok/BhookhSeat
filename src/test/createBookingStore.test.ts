@@ -253,6 +253,68 @@ describe('creating and cancelling', () => {
   });
 });
 
+describe('plans and account isolation', () => {
+  const limitFailure = { ok: false as const, error: { code: 'BOOKING_LIMIT_REACHED' as const, message: 'limit' } };
+  const codeOf = async (p: Promise<Result<Booking>>) => { const r = await p; return r.ok ? null : r.error.code; };
+
+  it('books as Free until the plan is known', async () => {
+    const { store, calls } = await signedIn('A');
+    await store.create(restaurantsSeed, input());
+    expect(calls.create[0].plan).toBe('free');
+  });
+
+  it('passes Premium to the backend once the account is confirmed Premium', async () => {
+    const { store, calls } = await signedIn('A');
+    store.setPlan('A', 'premium');
+    await store.create(restaurantsSeed, input());
+    expect(calls.create[0].plan).toBe('premium');
+  });
+
+  it('says "still loading", not "limit reached", at the limit while the plan is unknown', async () => {
+    const { store, impl } = await signedIn('A');
+    impl.create = async () => limitFailure;
+    expect(await codeOf(store.create(restaurantsSeed, input()))).toBe('STILL_LOADING');
+
+    store.setPlan('A', 'free'); // now we know for sure
+    expect(await codeOf(store.create(restaurantsSeed, input()))).toBe('BOOKING_LIMIT_REACHED');
+  });
+
+  it('never lets one account\'s Premium carry over to the next account', async () => {
+    const { store, subs, calls } = await signedIn('A');
+    store.setPlan('A', 'premium');
+
+    store.hydrate('B');
+    subs[1].onData([]);
+    await store.create(restaurantsSeed, input());
+    expect(calls.create[0].plan).toBe('free'); // B has not been confirmed Premium
+
+    store.setPlan('B', 'premium');
+    await store.create(restaurantsSeed, input({ time: '12:00' }));
+    expect(calls.create[1].plan).toBe('premium');
+  });
+
+  it('forgets every plan on sign-out, so signing back in starts unknown', async () => {
+    const { store, subs, calls } = await signedIn('A');
+    store.setPlan('A', 'premium');
+    await store.hydrate(null);
+
+    store.hydrate('A');
+    subs[1].onData([]);
+    await store.create(restaurantsSeed, input());
+    expect(calls.create[0].plan).toBe('free');
+  });
+
+  it('keeps the new account\'s plan when a late update for the old account arrives', async () => {
+    const { store, subs, calls } = await signedIn('A');
+    store.hydrate('B');
+    subs[1].onData([]);
+    store.setPlan('B', 'premium');
+    store.setPlan('A', 'free'); // late news about the previous account
+    await store.create(restaurantsSeed, input());
+    expect(calls.create[0].plan).toBe('premium');
+  });
+});
+
 /* -------- two phones, one server -------- */
 function fakeServer() {
   const counts = new Map<string, OccupancyCounts>();
